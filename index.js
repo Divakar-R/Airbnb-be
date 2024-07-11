@@ -71,14 +71,14 @@ app.post("/login", async (req, res) => {
         {},
         (err, token) => {
           if (err) throw err;
-          res.cookie("token", token).json(userDoc);
+          res.cookie("token", token).json({ success: true, data: userDoc });
         }
       );
     } else {
-      res.status(422).json("pass not ok");
+      res.status(422).json({ success: false, message: "Invalid Password" });
     }
   } else {
-    res.json("not found");
+    res.json({ success: false, message: "User not found" });
   }
 });
 
@@ -211,25 +211,29 @@ app.get("/places", async (req, res) => {
 });
 
 app.post("/bookings", async (req, res) => {
-  const userData = await getUserDataFromReq(req);
-  const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
-    req.body;
-  Booking.create({
-    place,
-    checkIn,
-    checkOut,
-    numberOfGuests,
-    name,
-    phone,
-    price,
-    user: userData.id,
-  })
-    .then((doc) => {
-      res.json(doc);
+  try {
+    const userData = await getUserDataFromReq(req);
+    const { place, checkIn, checkOut, numberOfGuests, name, phone, price } =
+      req.body;
+    Booking.create({
+      place,
+      checkIn,
+      checkOut,
+      numberOfGuests,
+      name,
+      phone,
+      price,
+      user: userData.id,
     })
-    .catch((err) => {
-      throw err;
-    });
+      .then((doc) => {
+        res.json(doc);
+      })
+      .catch((err) => {
+        throw err;
+      });
+  } catch (err) {
+    throw new Error(err);
+  }
 });
 
 app.get("/bookings", async (req, res) => {
