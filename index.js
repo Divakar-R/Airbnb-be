@@ -29,17 +29,35 @@ app.use(
 
 mongoose.connect(process.env.MONGO_URL);
 
-function getUserDataFromReq(req) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(req.cookies.token, jwtSecret, {}, (err, userData) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(userData);
-      }
-    });
-  });
+async function getUserDataFromReq(req) {
+  try {
+    const { authorization } = req.headers;
+    let token = authorization?.split(" ")?.[1];
+    if (token) {
+      let data = await jwt.verify(token, jwtSecret);
+      return data;
+    } else {
+      return {};
+    }
+  } catch (e) {
+    throw new Error(e);
+  }
 }
+
+const checkToken = async (req) => {
+  try {
+    const { authorization } = req.headers;
+    let token = authorization?.split(" ")?.[1];
+    if (token) {
+      let data = await jwt.verify(token, jwtSecret);
+      return token;
+    } else {
+      null;
+    }
+  } catch (e) {
+    throw new Error(e);
+  }
+};
 
 app.get("/test", (req, res) => {
   res.json("test ok");
@@ -71,9 +89,7 @@ app.post("/login", async (req, res) => {
         {},
         (err, token) => {
           if (err) throw err;
-          res
-            .cookie("token", token, { sameSite: "none" })
-            .json({ success: true, data: userDoc });
+          res.json({ success: true, token, data: userDoc });
         }
       );
     } else {
@@ -84,8 +100,8 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/profile", (req, res) => {
-  const { token } = req.cookies;
+app.get("/profile", async (req, res) => {
+  const token = await checkToken(req);
   if (token) {
     jwt.verify(token, jwtSecret, {}, async (err, userData) => {
       if (err) throw err;
@@ -125,8 +141,8 @@ app.post("/upload", photosMiddleware.array("photos", 100), (req, res) => {
   res.json(uploadedFiles);
 });
 
-app.post("/places", (req, res) => {
-  const { token } = req.cookies;
+app.post("/places", async (req, res) => {
+  const token = await checkToken(req);
   const {
     title,
     address,
@@ -158,8 +174,8 @@ app.post("/places", (req, res) => {
   });
 });
 
-app.get("/user-places", (req, res) => {
-  const { token } = req.cookies;
+app.get("/user-places", async (req, res) => {
+  const token = await checkToken(req);
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     const { id } = userData;
     res.json(await Place.find({ owner: id }));
@@ -172,7 +188,7 @@ app.get("/places/:id", async (req, res) => {
 });
 
 app.put("/places/:id", async (req, res) => {
-  const { token } = req.cookies;
+  const token = await checkToken(req);
   const {
     id,
     title,
