@@ -78,6 +78,7 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
+  try{
   const { email, password } = req.body;
   const userDoc = await User.findOne({ email });
   if (userDoc) {
@@ -98,9 +99,14 @@ app.post("/login", async (req, res) => {
   } else {
     res.json({ success: false, message: "User not found" });
   }
+}catch(e) {
+  res.json({ success: false, message: e?.message });
+}
+}
 });
 
 app.get("/profile", async (req, res) => {
+  try{
   const token = await checkToken(req);
   if (token) {
     jwt.verify(token, jwtSecret, {}, async (err, userData) => {
@@ -111,6 +117,9 @@ app.get("/profile", async (req, res) => {
   } else {
     res.json(null);
   }
+}catch(e) {
+  res.json(null);
+}
 });
 
 app.post("/logout", (req, res) => {
@@ -118,6 +127,7 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/upload-by-link", async (req, res) => {
+  try{
   const { link } = req.body;
   const newName = "photo" + Date.now() + ".jpg";
   await imageDownloader.image({
@@ -125,10 +135,15 @@ app.post("/upload-by-link", async (req, res) => {
     dest: __dirname + "/uploads/" + newName,
   });
   res.json(newName);
+}catch(e) {
+  res.json(null);
+
+}
 });
 
 const photosMiddleware = multer({ dest: "uploads/" });
 app.post("/upload", photosMiddleware.array("photos", 100), (req, res) => {
+  try{
   const uploadedFiles = [];
   for (let i = 0; i < req.files.length; i++) {
     const { path, originalname } = req.files[i];
@@ -139,9 +154,14 @@ app.post("/upload", photosMiddleware.array("photos", 100), (req, res) => {
     uploadedFiles.push(newPath.replace("uploads/", ""));
   }
   res.json(uploadedFiles);
+}catch(e){
+  res.json({}));
+
+}
 });
 
 app.post("/places", async (req, res) => {
+  try{
   const token = await checkToken(req);
   const {
     title,
@@ -172,14 +192,21 @@ app.post("/places", async (req, res) => {
     });
     res.json(placeDoc);
   });
+}catch(e){
+  res.json({})
+}
 });
 
 app.get("/user-places", async (req, res) => {
+  try{
   const token = await checkToken(req);
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     const { id } = userData;
     res.json(await Place.find({ owner: id }));
   });
+}catch(e){
+  res.json({})
+}
 });
 
 app.get("/places/:id", async (req, res) => {
@@ -188,6 +215,7 @@ app.get("/places/:id", async (req, res) => {
 });
 
 app.put("/places/:id", async (req, res) => {
+  try{
   const token = await checkToken(req);
   const {
     id,
@@ -222,6 +250,9 @@ app.put("/places/:id", async (req, res) => {
       res.json("ok");
     }
   });
+}catch(e){
+  res.json("error")
+}
 });
 
 app.get("/places", async (req, res) => {
@@ -255,8 +286,12 @@ app.post("/bookings", async (req, res) => {
 });
 
 app.get("/bookings", async (req, res) => {
+  try{
   const userData = await getUserDataFromReq(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
+  }catch(e){
+    res.json({})
+  }
 });
 
 app.listen(4000);
