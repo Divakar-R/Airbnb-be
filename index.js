@@ -290,4 +290,17 @@ app.get("/bookings", async (req, res) => {
     }
 });
 
-app.listen(4000);
+
+const start = async () => {
+  try {
+      await app.listen(4000);
+      console.log(`server started at 4000`);
+  } catch (err) {
+      // app.log.error(err);
+      console.log(err);
+      process.exit(1);
+  }
+};
+
+start();
+
